@@ -14,7 +14,9 @@
 static std::filesystem::file_time_type lastReloadTime;
 static std::error_code errorCode;
 static module_t hotReloadModule = INVALID_MODULE_ID;
-static sf::Texture* (*hotReloadDraw)(void) = nullptr;
+static sf::Texture* (*hotReloadDraw)(DrawInfo*) = nullptr;
+
+static DrawInfo drawInfo;
 
 static void checkAndReloadDrawFunction(void)
 {
@@ -67,14 +69,25 @@ static void checkAndReloadDrawFunction(void)
 	INFO("Draw code successfully reloaded");
 }
 
-#if 1
+static constexpr size_t TEXT_STAT_BUFFER_SIZE = 1024;
+char statTextBuffer[TEXT_STAT_BUFFER_SIZE];
+
 int main(void)
 {
-	sf::RenderWindow w (sf::VideoMode(480,360),"Raytracing",sf::Style::Close | sf::Style::Titlebar);
+	sf::RenderWindow w (sf::VideoMode(1080,720),"Raytracing", sf::Style::Close | sf::Style::Titlebar);
+	w.setVerticalSyncEnabled(true);
 
 	sf::Texture* texture = nullptr;
+	sf::Font font;
+	font.loadFromFile(ASSETS_PATH "/font.ttf");
 
+	sf::Clock rtClock;
 	sf::Clock c;
+
+	float elapsedSinceLastSecond = 0;
+	unsigned int frameCounter = 0;
+	unsigned int fpsValue = 0;
+	int printBufferUsage = 1;
 	while(w.isOpen()) {
 		sf::Event event;
 
@@ -90,15 +103,33 @@ int main(void)
 		}
 		checkAndReloadDrawFunction();
 
+		rtClock.restart();
 		if (hotReloadDraw)
-		{ texture = hotReloadDraw(); }
+		{ texture = hotReloadDraw(&drawInfo); }
+		const float RTMsTime = rtClock.restart().asMicroseconds() / 1000.0;
 
 		w.clear();
 		w.draw(sf::Sprite(*texture));
 
-		sf::Time elapsed = c.restart();
+		const float frameMsTime = c.restart().asMicroseconds() / 1000.0;
+		const float rtTimeRatio = RTMsTime / frameMsTime * 100.0;
 
+		frameCounter += 1;
+		elapsedSinceLastSecond += frameMsTime;
 
+		if (elapsedSinceLastSecond >= 1000.0)
+		{
+			fpsValue = frameCounter;
+			frameCounter = 0;
+			elapsedSinceLastSecond -= 1000.0;
+		}
+
+		printBufferUsage = snprintf(statTextBuffer,TEXT_STAT_BUFFER_SIZE,
+				 "FPS: %d - print buffer : %d / %d\n"
+				 "%.2fms/%.2fms (%3.2f%%)\n"
+				 "pixel buffer: %.3fko\n",
+				 fpsValue,printBufferUsage,TEXT_STAT_BUFFER_SIZE,RTMsTime,frameMsTime,rtTimeRatio,drawInfo.pixelBufferSize / 1024.f);
+		w.draw(sf::Text(statTextBuffer,font));
 
 		w.display();
 	}
@@ -106,51 +137,3 @@ int main(void)
 	dylib_Unload(hotReloadModule);
 	return EXIT_SUCCESS;
 }
-#else
-#include <SFML/Graphics.hpp>
-
-int main()
-{
-	// Create a window to display the pixel buffer
-	sf::RenderWindow window(sf::VideoMode(800, 600), "Pixel Buffer Example");
-
-	// Create a texture to hold the pixel buffer data
-	sf::Texture texture;
-	texture.create(800, 600);
-
-	// Create a C++ vector to hold the pixel buffer data
-	std::vector<sf::Uint32> pixels(800 * 600); // 4 bytes per pixel (RGBA)
-
-	// Fill the pixel buffer with red pixels
-	for (int i = 0; i < pixels.size(); i += 1) {
-		pixels[i] = 0xFFFFFF00;
-	}
-
-	// Update the texture with the pixel data
-	texture.update((uint8_t*)pixels.data());
-
-	// Create a sprite and set its texture
-	sf::Sprite sprite(texture);
-
-	// Draw the sprite to the window
-	while (window.isOpen())
-	{
-		sf::Event event;
-		while (window.pollEvent(event)) {
-			switch (event.type) {
-				case sf::Event::Closed:
-					window.close();
-					break;
-
-				default:
-					break;
-			}
-		}
-		window.clear();
-		window.draw(sprite);
-		window.display();
-	}
-
-	return 0;
-}
-#endif

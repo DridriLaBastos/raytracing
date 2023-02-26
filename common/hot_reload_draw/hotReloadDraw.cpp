@@ -7,7 +7,6 @@
 
 #include "SFML/Graphics.hpp"
 
-#include "common/log.hpp"
 #include "common.hpp"
 
 #ifdef WIN32
