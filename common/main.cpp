@@ -109,7 +109,9 @@ int main(void)
 		const float RTMsTime = rtClock.restart().asMicroseconds() / 1000.0;
 
 		w.clear();
-		w.draw(sf::Sprite(*texture));
+		sf::Sprite sprite (*texture);
+		sprite.scale(drawInfo.scaleFactor,drawInfo.scaleFactor);
+		w.draw(sprite);
 
 		const float frameMsTime = c.restart().asMicroseconds() / 1000.0;
 		const float rtTimeRatio = RTMsTime / frameMsTime * 100.0;
@@ -127,8 +129,9 @@ int main(void)
 		printBufferUsage = snprintf(statTextBuffer,TEXT_STAT_BUFFER_SIZE,
 				 "FPS: %d - print buffer : %d / %d\n"
 				 "%.2fms/%.2fms (%3.2f%%)\n"
-				 "pixel buffer: %.3fko\n",
-				 fpsValue,printBufferUsage,TEXT_STAT_BUFFER_SIZE,RTMsTime,frameMsTime,rtTimeRatio,drawInfo.pixelBufferSize / 1024.f);
+				 "pixel buffer: %.3fko\n"
+				 "scale: %.2f",
+				 fpsValue,printBufferUsage,TEXT_STAT_BUFFER_SIZE,RTMsTime,frameMsTime,rtTimeRatio,drawInfo.pixelBufferSize / 1024.f,drawInfo.scaleFactor);
 		w.draw(sf::Text(statTextBuffer,font));
 
 		w.display();

@@ -15,8 +15,8 @@
 #define DLL_EXPORT __attribute__((visibility("default")))
 #endif
 
-constexpr size_t RT_CAMERA_WIDTH = 100;
-constexpr size_t RT_CAMERA_HEIGHT = 200;
+constexpr size_t RT_CAMERA_WIDTH = 300;
+constexpr size_t RT_CAMERA_HEIGHT = 300;
 constexpr size_t RT_CAMERA_PIXEL_COUNT = RT_CAMERA_WIDTH * RT_CAMERA_HEIGHT;
 
 static sf::Texture* texture;
@@ -25,6 +25,7 @@ static Pixel* pixels;
 extern "C" DLL_EXPORT sf::Texture* hotReloadDraw(DrawInfo* info)
 {
 	info->pixelBufferSize = RT_CAMERA_PIXEL_COUNT*sizeof(pixels[0]);
+	info->scaleFactor = 2.3;
 	for (size_t i = 0; i < RT_CAMERA_PIXEL_COUNT; i += 1)
 	{
 		pixels[i].red = 0;

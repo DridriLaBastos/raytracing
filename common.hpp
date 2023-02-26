@@ -18,6 +18,7 @@ union Pixel
 struct DrawInfo
 {
 	size_t pixelBufferSize;
+	float scaleFactor;
 };
 
 module_t dylib_Reload(const char* dylibPath, module_t lastLoad);
